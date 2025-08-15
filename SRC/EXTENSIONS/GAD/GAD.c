@@ -790,10 +790,17 @@ int GADUpdateTurbineRotorMask(){
   int ij;
   float mask_value;
   float pi = 3.1415926535;
+#define CELLINROTOR
+#ifdef CELLINROTOR
+  float x_hat[3];
+  float dr[3];
+  float tiltAngle = 0.0;
+#else
   float x1,x2,x3,y1,y2,y3;
-  float perpDist;
-  float perpdx_rot;
   float parallelDist;
+#endif
+  float perpdx_rot;
+  float perpDist;
   float rVec;
   void  *memsetReturnVal;
   
@@ -810,6 +817,25 @@ int GADUpdateTurbineRotorMask(){
            ijk = i*(Nyp+2*Nh)*(Nzp+2*Nh)+j*(Nzp+2*Nh)+k;
            ij = i*(Nyp+2*Nh)+j;
            mask_value = 0.0;
+#ifdef CELLINROTOR
+	   //Unit horizontal vector normal to the rotor-disk plane
+           x_hat[0] = cosf(tiltAngle*pi/180.0)*cosf(GAD_rotorTheta[iturb]*pi/180.0);
+           x_hat[1] = cosf(tiltAngle*pi/180.0)*sinf(GAD_rotorTheta[iturb]*pi/180.0);
+           x_hat[2] = -sinf(tiltAngle*pi/180.0);
+
+           //Vector from nacelle center to current grid point
+           dr[0] = xPos[ijk]-GAD_Xcoords[iturb];
+           dr[1] = yPos[ijk]-GAD_Ycoords[iturb];
+           dr[2] = (zPos[ijk]-topoPos[ij])-GAD_hubHeights[GAD_turbineType[iturb]];
+    
+           //Perpendicular distance from nacelle-center to current grid point (normal to the rotor-disk plane)
+           perpDist = dr[0]*x_hat[0] + dr[1]*x_hat[1] + dr[2]*x_hat[2];
+
+           //Proper radial distance of blade segment (accounts for tilted rotor?) 
+	   rVec = sqrtf( powf(dr[0]-perpDist*x_hat[0],2.0)
+                        +powf(dr[1]-perpDist*x_hat[1],2.0)
+                        +powf(dr[2]-perpDist*x_hat[2],2.0) );
+#else
            /* Define the rotor plane */
            x1 = GAD_Xcoords[iturb] - 0.5*GAD_rotorD[GAD_turbineType[iturb]]*cos(0.5*pi + GAD_rotorTheta[iturb]*pi/180.0);
            y1 = GAD_Ycoords[iturb] - 0.5*GAD_rotorD[GAD_turbineType[iturb]]*sin(0.5*pi + GAD_rotorTheta[iturb]*pi/180.0);
@@ -817,23 +843,28 @@ int GADUpdateTurbineRotorMask(){
            y2 = GAD_Ycoords[iturb] + 0.5*GAD_rotorD[GAD_turbineType[iturb]]*sin(0.5*pi + GAD_rotorTheta[iturb]*pi/180.0);
            x3 = fabs(GAD_Xcoords[iturb]-xPos[ijk])*cos(0.5*pi + GAD_rotorTheta[iturb]*pi/180.0);
            y3 = fabs(GAD_Ycoords[iturb]-yPos[ijk])*sin(0.5*pi + GAD_rotorTheta[iturb]*pi/180.0);
-           /*Define ithe perpendicular "dx" in the rotated "x-y" plane  */
-           perpdx_rot =  fabs(dX*cos(0.5*pi + GAD_rotorTheta[iturb]*pi/180.0))
-                       + fabs(dY*sin(0.5*pi + GAD_rotorTheta[iturb]*pi/180.0));
 
            /*Find the perpendicular distance from this i,j,k cell center to the rotor-plane*/
            perpDist = fabs( (x2-x1)*(y1-yPos[ijk]) - (x1-xPos[ijk])*(y2-y1) )/sqrt(pow((x2-x1),2.0) + pow((y2-y1),2.0));
            parallelDist = sqrt(pow(x3,2.0)+pow(y3,2.0)); 
            /*Recalculate the radial vector of the yaw-projected rotor disk...*/
            rVec = sqrt(pow(parallelDist,2.0) + pow((GAD_hubHeights[GAD_turbineType[iturb]]-(zPos[ijk]-topoPos[ij])),2.0));
-           if(   (perpDist < ((float) numgridCells_away)*perpdx_rot)
-              && rVec <= (0.5*GAD_rotorD[GAD_turbineType[iturb]]) ){
+#endif
+           /*Define ithe perpendicular "dx" in the rotated "x-y" plane  */
+           perpdx_rot =  fabs(dX*cosf(0.5*pi + GAD_rotorTheta[iturb]*pi/180.0))
+                       + fabs(dY*sinf(0.5*pi + GAD_rotorTheta[iturb]*pi/180.0));
+
+           if(   (fabs(perpDist) < ((float) numgridCells_away)*perpdx_rot)
+              && rVec <= (0.5*GAD_rotorD[GAD_turbineType[iturb]])
+	      && rVec >  (0.5*GAD_nacelleD[GAD_turbineType[iturb]]) ){
 //#define DEBUG_GAD_UPDATEROTOR
 #ifdef DEBUG_GAD_UPDATEROTOR
-             float m,b;
-             if((mpi_rank_world == 0) && (k==13) ){
-               printf("GADCreateTurbineRotorMask: Turbine %d @ %d,%d,%d: perpDist = %f , perpdx_rot = %f, parallelDist = %f, zDist = %f, m = %f, b = %f.\n",
-               iturb,i,j,k,perpDist, perpdx_rot, parallelDist, sqrt(pow((GAD_hubHeights[GAD_turbineType[iturb]]-(zPos[ijk]-topoPos[ij])),2.0)), m, b ) ;
+             //float m,b;
+             if((mpi_rank_world == 6) && (k==20) ){
+              // printf("GADCreateTurbineRotorMask: Turbine %d @ %d,%d,%d: perpDist = %f , perpdx_rot = %f, parallelDist = %f, zDist = %f, m = %f, b = %f.\n",
+              // iturb,i,j,k,perpDist, perpdx_rot, parallelDist, sqrt(pow((GAD_hubHeights[GAD_turbineType[iturb]]-(zPos[ijk]-topoPos[ij])),2.0)), m, b ) ;
+               printf("GADCreateTurbineRotorMask: Turbine %d @ %d,%d,%d: rVec = %f , perpDist = %f , perpdx_rot = %f, zDist = %f.\n",
+               iturb,i,j,k, rVec, perpDist, perpdx_rot, sqrtf(powf((GAD_hubHeights[GAD_turbineType[iturb]]-(zPos[ijk]-topoPos[ij])),2.0))) ;
                fflush(stdout);
              }
 #endif
