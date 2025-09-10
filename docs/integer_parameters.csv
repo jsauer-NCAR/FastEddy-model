@@ -1,0 +1,83 @@
+Name, Min, Max, Mandatory or Optional, Description
+numProcsX, 1, INT_MAX, Mandatory, Number of cores to be used for horizontal domain decomposition in X directions
+numProcsY, 1, INT_MAX, Mandatory, Number of cores to be used for horizontal domain decomposition in Y directions
+GADSelector, 0, 1, Mandatory, Generalized Actuator Disk Selector: 0=off; 1=on
+GADoutputForces, 0, 1, Optional, Flag to include GAD forces in the output: 0=off; 1=on
+GADofflineForces, 0, 1, Optional, Flag to compute GAD forces in an offline mode: 0=off; 1=on
+GADaxialInduction, 0, 1, Optional, Flag to compute axial induction factor: 0==off (uses prescribed GADaxialIndVal); 1==on
+GADrefSwitch, 0, 1, Optional, Switch to use reference windspeed: 0=off; 1=on
+GADrefSeriesLength, 1, 360, Optional, Number of sampling windows over which to average again for reference velocity magnitude and direction
+GADForcingSwitch, 0, 1, Optional, Switch to use the GADrefU-based or local windspeed in computing GAD forces: 0=local; 1=ref
+urbanSelector, 0, 2, Mandatory, Urban selector: 0=off; 1=on
+urban_heatRedis, 0, 1, Mandatory, Selector to activate surface heat redistribution
+Nx, 1, INT_MAX, Mandatory, Complete Cartesian Domain extents in the x direction
+Ny, 1, INT_MAX, Mandatory, Complete Cartesian Domain extents in the y direction
+Nz, 1, INT_MAX, Mandatory, Complete Cartesian Domain extents in the z direction
+Nh, 0, INT_MAX, Mandatory, Number of halo cells to be used (dependent on largest stencil extent)
+coordHorizHalos, 0, 1, Mandatory, Switch to setup coordiante halos as periodic; or gradient following
+verticalDeformSwitch, 0, 1, Mandatory, Switch to use vertical coordinate deformation
+tBx, 1, INT_MAX, Mandatory, Thread block size in x direction
+tBy, 1, INT_MAX, Mandatory, Thread block size in y direction
+tBz, 1, INT_MAX, Mandatory, Thread block size in z direction
+timeMethod, 0, 0, Mandatory, Selector for time integration method. [0=RK1; 1=RK3-WS2002 (default)]
+Nt, 1, INT_MAX, Mandatory, Number of timesteps to perform
+NtBatch, 1, Nt, Mandatory, Number of timesteps in a batch to perform in a CUDA kernel launch
+hydroBCs, 1, 2, Mandatory, Selector for hydro BC set. 1= Dirichlet lateral ceiling and surface boundary conditions (Limited Area Domain -- LAD) 2= periodicHorizVerticalAbl
+hydroBndysFileStart, 0, 500000, Mandatory, Start counter value for LAD BC set files (hydroBCs = 1)
+hydroBndysFileEnd, 0, 500000, Mandatory, End counter value for LAD BC set files (hydroBCs = 1)
+hydroForcingWrite, 0, 1, Mandatory, Switch for dumping forcing fields of prognostic variables. 0-off (default) 1= on
+hydroForcingLog, 0, 1, Mandatory, Switch for logging Frhs summary metrics. 0-off (default) 1= on
+hydroSubGridWrite, 0, 1, Mandatory, Switch for SGS fields 0-off (default) 1= on
+pgfSelector, 0, 1, Optional, Pressure Gradient Force (pgf) selector: 0=off 1=on
+buoyancySelector, 0, 1, Optional, Buoyancy Force selector: 0=off 1=on
+coriolisSelector, 0, 2, Mandatory, Coriolis Force selector: 0= none 1= Horiz.-only 2=Horz. & Vert.
+turbulenceSelector, 0, 1, Mandatory, Turbulence scheme selector: 0= none 1= Lilly/Smagorinsky
+TKESelector, 0, 2, Mandatory, Prognostic TKE selector: 0= none 1= Prognostic
+TKEAdvSelector, 0, 6, Mandatory, SGSTKE advection scheme selector
+advectionSelector, 0, 6, Mandatory, Advection scheme selector: 0= 1st-order upwind 2= 3rd-order QUICK
+ceilingAdvectionBC, 0, 1, Optional, Selector to allow advection through the domain ceiling 1=on 0=off (w-ceiling = 0)
+diffusionSelector, 0, 1, Mandatory, Diffusion Term-type selector: 0= none 1= constant 2= scalar turbulent-diffusivity
+surflayerSelector, 0, 3, Mandatory, Monin-Obukhov surface layer selector: 0= off 1= on
+surflayer_idealsine, 0, 1, Mandatory, Selector for idealized sinusoidal surface heat flux or skin temperature forcing
+surflayer_stab, 0, 1, Optional, Exchange coeffcient stability correction selector: 0= on 1= off
+surflayer_z0tdyn, 0, 2, Optional, Dynamic z0t calculation following Zilitinkevich (1995) approach: 0= off 1= constant Zilitinkevich coeff 2= variable Zilitinkevich coeff
+surflayer_offshore, 0, 1, Mandatory, Offshore selector: 0=off 1=on
+surflayer_offshore_visc, 0, 1, Optional, Viscous term on z0m: 0=off 1=on (default)
+surflayer_offshore_opt, 0, 5, Mandatory, Offshore roughness parameterization: ==0 (Charnock) ==1 (Charnock with variable alpha) ==2 (Taylor & Yelland) ==3 (Donelan) ==4 (Drennan) ==5 (Porchetta)
+surflayer_offshore_dyn, 0, 1, Optional, Selector to use parameterized ocean parameters: 0=off 1=on (default)
+canopySelector, 0, 1, Optional, Canopy selector: 0=off 1=on
+canopySkinOpt, 0, 1, Mandatory, Canopy selector to use additional skin friction effect on drag coefficient: 0=off 1=on
+cellpertSelector, 0, 1, Optional, CP method selector: 0= off 1= on
+cellpert_nts, 0, 1e+6, Optional, Number of time steps after which perturbations are seeded
+cellpert_sw2b, 0, 3, Mandatory, Switch to do: 0= all four lateral boundaries 1= only south & west boundaries 2= only south boundary
+cellpert_gppc, 0, 50, Mandatory, Number of grid points conforming the cell
+cellpert_ndbc, 0, 10, Mandatory, Number of cells normal to domain lateral boundaries
+cellpert_kbottom, 1, 10, Mandatory, z-grid point where the perturbations start
+cellpert_ktop, 0, 200, Mandatory, z-grid point where the perturbations end
+cellpert_tvcp, 0, 1, Mandatory, Time-varying CP method selector: 0= off 1= on (when hydroBCs == 1)
+lsfSelector, 0, 1, Mandatory, Large-scale forcings selector: 0=off 1=on
+lsf_horMnSubTerms, 0, 1, Mandatory, Switch 0=off 1=on
+moistureSelector, 0, 1, Mandatory, Moisture selector: 0=off 1=on
+moistureNvars, 0, 2, Mandatory, Number of moisture species
+moistureAdvSelectorQv, 0, 6, Mandatory, Water vapor advection scheme selector
+moistureAdvSelectorQi, 0, 2, Mandatory, Moisture advection scheme selector for non-qv fields (non-oscillatory schemes)
+moistureSGSturb, 0, 1, Mandatory, Selector to apply sub-grid scale diffusion to moisture fields
+moistureCond, 1, 4, Mandatory, Selector to apply condensation to moisture fields
+moistureCondBasePres, 0, 1, Mandatory, Selector to use base pressure for microphysics
+surflayer_qskin_input, 0, 1, Optional, Selector for file input (restart) value for qskin under surflayerSelector == 2
+filterSelector, 0, 1, Mandatory, Explicit filter selector: 0=off 1=on
+filter_6thdiff_vert, 0, 1, Optional, Vertical 6th-order filter on w selector: 0=off 1=on
+filter_6thdiff_hori, 0, 1, Optional, Horizontal 6th-order filter on rho theta qv selector: 0=off 1=on
+filter_divdamp, 0, 1, Optional, Divergence damping selector: 0=off 1=on
+dampingLayerSelector, 0, 1, Mandatory, Rayleigh Damping Layer selector
+NhydroAuxScalars, 0, MAX_AUXSC_SRC, Optional, Number of prognostic auxiliary scalar variable fields
+AuxScAdvSelector, 0, 6, Mandatory, Advection Scheme to use for auxiliary scalar variable fields
+AuxScSGSturb, 0, 1, Mandatory, Selector to apply sub-grid scale diffusion to auxiliary scalar fields
+srcAuxScTemporalType, 0, 1, Mandatory, Temporal characterization of source (0 = instantaneous 1 = continuous)
+srcAuxScGeometryType, 0, 0, Mandatory, 0 = point (single cell volume) 1 = line (line of surface cells)
+srcAuxScMassSpecType, 0, 0, Mandatory, Mass specification type 0 = strict mass in kg 1 = mass source rate in kg/s
+stabilityScheme, 0, 4, Mandatory, Base-State stability setup scheme (0 = none 1 = profile 2 = linear in theta)
+thetaPerturbationSwitch, 0, 1, Mandatory, Initial theta perturbations switch: 0=off 1=on
+physics_oneRKonly, 0, 1, Optional, Selector to apply physics RHS forcing only at the latest RK stage
+ioOutputMode, 0, 1, Optional, 0: N-to-1 gather and write to a netcdf file; 1:N-to-N writes of FastEddy binary files
+frqOutput, 0, INT_MAX, Mandatory, Frequency in timesteps to produce output

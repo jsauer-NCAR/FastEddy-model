@@ -1,0 +1,85 @@
+Name, Min, Max, Mandatory or Optional, Description
+GADaxialIndVal, 0.0, 1.0, Optional, Prescribed constant axial induction factor when GADaxialInduction==1
+GADrefU, 0.0, 50.0, Optional, Prescribed constant reference hub-height windspeed
+GADrefSampleWindow, 1.0, 60.0, Optional, Sample duration over which to average per-timestep values (filtering out highest frequencies)
+cd_build, 0.0, 1e+8, Mandatory, c_d coefficient used by the drag-based building formulation: -c_d|u_i|u_i
+ct_build, 0.0, 1e+8, Mandatory, c_t coefficient (s-1) used by the drag-based building formulation: -c_t(rho*theta-rho_b*theta_b) & -c_t(rho-rho_b)
+d_xi, FLT_MIN, FLT_MAX, Mandatory, Computational Domain fixed resolutions (i; j; k respectively)
+d_eta, FLT_MIN, FLT_MAX, Mandatory, Computational Domain fixed resolutions (i; j; k respectively)
+d_zeta, FLT_MIN, FLT_MAX, Mandatory, Computational Domain fixed resolutions (i; j; k respectively)
+verticalDeformFactor, 0.0, 1.0, Mandatory, Factor used under vertical deformation (0.0-1.0)
+verticalDeformQuadCoeff, -2.0, 2.0, Mandatory, Quadratic term coefficient in the deformtion scheme (default = 0.0)
+dt, FLT_MIN, FLT_MAX, Mandatory, Timestep resolution in seconds
+dtBdyPlaneBCs, 0.0, 6e5, Mandatory, Delta in time (seconds) between BdyPlane sets
+coriolisLatitude, -90.0, 90.0, Mandatory, Charactersitc latitude in degrees from equator of the LES domain
+TKEAdvSelector_b_hyb, 0.0, 1.0, Mandatory, Hybrid advection scheme parameter
+c_s, 1e-6, 1e6, Mandatory, Smagorinsky turbulence model constant used for turbulenceSelector = 1 with TKESelector = 0
+c_k, 1e-6, 1e6, Mandatory, Lilly turbulence model constant used for turbulenceSelector = 1 with TKESelector > 0
+b_hyb, 0.0, 1.0, Mandatory, Hybrid advection scheme parameter: 0.0= lower-order upwind; 1.0=higher-order cetered; 0.0 < b_hyb < 1.0 = hybrid
+nu_0, 0, FLT_MAX, Mandatory, Constant diffusivity used when diffusionSelector = 1
+surflayer_z0, 1e-12, 1e+0, Mandatory, Roughness length (momentum)
+surflayer_z0t, 1e-6, 1e+1, Mandatory, Roughness length (temperature)
+surflayer_tr, -1e+1, 1e+1, Mandatory, Surface temperature rate K h-1
+surflayer_wth, -5e+0, 5e+0, Mandatory, Kinematic sensible heat flux at the surface
+surflayer_ideal_ts, 0, 1e+5, Mandatory, Start time in seconds for the idealized sinusoidal surface forcing
+surflayer_ideal_te, 0, 1e+5, Mandatory, End time in seconds for the idealized sinusoidal surface forcing
+surflayer_ideal_amp, 0, 1e+3, Mandatory, Maximum amplitude of the idealized sinusoidal surface forcing
+surflayer_offshore_hs, 0, 1e+2, Mandatory, Significant wave height
+surflayer_offshore_lp, 0.1, 1e+3, Mandatory, Peak wavelength
+surflayer_offshore_cp, 0.1, 1e+2, Mandatory, Wave phase speed
+surflayer_offshore_theta, 0.0, 180.0, Mandatory, Wave/wind angle
+canopy_cd, 0.0, 1e+2, Mandatory, Non-dimensional canopy drag coefficient
+canopy_lf, 0.0, 1e+2, Mandatory, Representative canopy element length scale
+cellpert_amp, 0.0, 20.0, Mandatory, Maximum amplitude for the potential temperature perturbations
+cellpert_eckert, 0.0, 10.0, Mandatory, Eckert number for the potential temperature perturbations (when hydroBCs == 1)
+cellpert_tsfact, 0.0, 10.0, Mandatory, Factor on the refreshing perturbation time scale (when hydroBCs == 1)
+lsf_w_surf, -1e+4, 1e+4, Mandatory, lsf to w at the surface
+lsf_w_lev1, -1e+4, 1e+4, Mandatory, lsf to w at the first specified level
+lsf_w_lev2, -1e+4, 1e+4, Mandatory, lsf to w at the second specified level
+lsf_w_zlev1, 0.0, 1e+4, Mandatory, lsf to w height 1
+lsf_w_zlev2, 0.0, 1e+4, Mandatory, lsf to w height 2
+lsf_th_surf, -1e+4, 1e+4, Mandatory, lsf to theta at the surface
+lsf_th_lev1, -1e+4, 1e+4, Mandatory, lsf to theta at the first specified level
+lsf_th_lev2, -1e+4, 1e+4, Mandatory, lsf to theta at the second specified level
+lsf_th_zlev1, 0.0, 1e+4, Mandatory, lsf to theta height 1
+lsf_th_zlev2, 0.0, 1e+4, Mandatory, lsf to theta height 2
+lsf_qv_surf, -1e+4, 1e+4, Mandatory, lsf to qv at the surface
+lsf_qv_lev1, -1e+4, 1e+4, Mandatory, lsf to qv at the first specified level
+lsf_qv_lev2, -1e+4, 1e+4, Mandatory, lsf to qv at the second specified level
+lsf_qv_zlev1, 0.0, 1e+4, Mandatory, lsf to qv height 1
+lsf_qv_zlev2, 0.0, 1e+4, Mandatory, lsf to qv height 2
+lsf_freq, 1e-3, 1e+3, Mandatory, Large-scale forcing frequency (seconds)
+moistureAdvSelectorQv_b, 0.0, 1.0, Mandatory, Hybrid advection scheme parameter
+moistureCondTscale, 1e-4, 1000.0, Mandatory, Relaxation time in seconds
+moistureMPcallTscale, 1e-4, 1000.0, Mandatory, Time scale for microphysics to be called
+surflayer_wq, -5e+0, 5e+0, Mandatory, Kinematic latent heat flux at the surface
+surflayer_qr, -1e+1, 1e+1, Mandatory, Surface water vapor rate (g/kg) h-1
+surflayer_ideal_qts, 0, 1e+5, Mandatory, Start time (seconds) for idealized sinusoidal surf. forcing of latent heat flux
+surflayer_ideal_qte, 0, 1e+5, Mandatory, End time (seconds) for idealized sinusoidal surf. forcing of latent heat flux
+surflayer_ideal_qamp, 0, 1e+3, Mandatory, Maximum amplitude of idealized sinusoidal surface forcing of latent heat flux
+filter_6thdiff_vert_coeff, 0.0, 1.0, Mandatory, Vertical 6th-order filter w factor: 0.0=off; 1.0=full
+filter_6thdiff_hori_coeff, 0.0, 1.0, Mandatory, Horizontal 6th-order filter factor: 0.0=off; 1.0=full
+dampingLayerDepth, 0.0, FLT_MAX, Mandatory, Rayleigh Damping Layer Depth
+AuxScAdvSelector_b_hyb, 0.0, 1.0, Mandatory, Gybrid advection scheme parameter
+srcAuxScStartSeconds, 0, FLT_MAX, Mandatory, Source start time in seconds
+srcAuxScDurationSeconds, 0, FLT_MAX, Mandatory, Source duration in seconds
+srcAuxScLocation_X, -FLT_MAX, FLT_MAX, Mandatory, Cartesian coordinate tuple 'center' of the source
+srcAuxScLocation_Y, -FLT_MAX, FLT_MAX, Mandatory, Cartesian coordinate tuple 'center' of the source
+srcAuxScLocation_Z, -FLT_MAX, FLT_MAX, Mandatory, Cartesian coordinate tuple 'center' of the source
+srcAuxScMassSpecValue, , , Mass specification value in kg or kg/s given by srcAuxScMassSpecType 0 or 1
+temp_grnd, FLT_MIN, FLT_MAX, Mandatory, Base-State stability setup scheme ground temperature
+pres_grnd, FLT_MIN, FLT_MAX, Mandatory, Base-State stability setup scheme ground pressure
+zStableBottom, 0, FLT_MAX, Mandatory, Base-State stability setup scheme stable bottom height
+stableGradient, FLT_MIN, FLT_MAX, Mandatory, Base-State stability setup scheme stable gradient
+zStableBottom2, 0, FLT_MAX, Mandatory, Base-State stability setup scheme stable bottom height 2
+stableGradient2, FLT_MIN, FLT_MAX, Mandatory, Base-State stability setup scheme stable gradient 2
+zStableBottom3, 0, FLT_MAX, Mandatory, Base-State stability setup scheme stable bottom height 3
+stableGradient3, FLT_MIN, FLT_MAX, Mandatory, Base-State stability setup scheme stable gradient 3
+U_g, -FLT_MAX, FLT_MAX, Mandatory, Zonal (West-East) component of the geostrophic wind
+V_g, -FLT_MAX, FLT_MAX, Mandatory, Meridional (South-North) component of the geostrophic wind
+z_Ug, 0.0, FLT_MAX, Mandatory, Geostrophic wind height for U component
+z_Vg, 0.0, FLT_MAX, Mandatory, Geostrophic wind height for V component
+Ug_grad, -1e2, 1e2, Mandatory, Geostrophic wind gradient for U component
+Vg_grad, -1e2, 1e2, Mandatory, Geostrophic wind gradient for V component
+thetaHeight, 0.0, FLT_MAX, Mandatory, Initial theta perturbations maximum height
+thetaAmplitude, 0.0, 2.0, Mandatory, Initial theta perturbations maximum amplitude

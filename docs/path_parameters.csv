@@ -1,0 +1,3 @@
+Name, Mandatory or Optional, Description
+inPath, Optional, Directory Path where input files are to be read from
+outPath, Mandatory, Directory Path where output files are to be written
