@@ -397,119 +397,128 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
+Nh = 3  # halo width of the rank-wise binary output (used by field3dTranspose / field2dTranspose)
+
+def binary_files_for(FEoutBase, numOutRanks, timeStep):
+    """Names of the rank-wise binary files that make up one output timestep."""
+    return ['{:s}_rank_{:d}.{:d}'.format(FEoutBase, outRank, timeStep) for outRank in range(numOutRanks)]
+
+def convert_timestep(timeStep, outpath, FEoutBase, numOutRanks, netCDFpath, removeBinaries, attr_tables):
+    """Convert one output timestep from rank-wise binaries to a single netCDF file.
+
+    The netCDF file is written under a temporary name and renamed when complete, so a reader
+    (or a restart) never sees a partial file. Binaries are removed only after the rename.
+    Returns True if the timestep was converted, False if any rank file was missing.
+    """
+    theseFiles = binary_files_for(FEoutBase, numOutRanks, timeStep)
+    missing = [f for f in theseFiles if not os.path.exists('{:s}{:s}'.format(outpath, f))]
+    if missing:
+        print('{:d} specified binary files are missing. Skipping timestep: {:d}...'.format(len(missing), timeStep))
+        return False
+    dsFull = readBinary(numOutRanks, outpath, theseFiles)
+
+    # Add variable and coordinate attributes
+    dsFull = add_coordinate_attributes(dsFull)
+    dsFull = add_variable_attributes(dsFull, *attr_tables)
+
+    # Reorder variables to desired order
+    dsFull = reorder_dataset_variables(dsFull)
+
+    # Create encoding to prevent _FillValue for all variables AND coordinates
+    encoding = {var: {'_FillValue': None} for var in list(dsFull.data_vars) + list(dsFull.coords)}
+
+    # write the full domain dataset to a temporary netCDF file, then rename it into place
+    final = '{:s}/{:s}.{:d}'.format(netCDFpath, FEoutBase, timeStep)
+    tmp = final + '.tmp'
+    dsFull.to_netcdf(tmp, format='NETCDF4', encoding=encoding)
+    os.replace(tmp, final)
+
+    del dsFull
+    gc.collect()
+    if removeBinaries:
+        for thatFile in theseFiles:
+            os.remove('{:s}{:s}'.format(outpath, thatFile))
+    return True
+
 ################## main() ################################################################################
-print("Hello performing first MPI calls.")
+def main():
+    print("Hello performing first MPI calls.")
 
-mpi_size = MPI.COMM_WORLD.Get_size()
-mpi_rank = MPI.COMM_WORLD.Get_rank()
-mpi_name = MPI.Get_processor_name()
+    mpi_size = MPI.COMM_WORLD.Get_size()
+    mpi_rank = MPI.COMM_WORLD.Get_rank()
+    mpi_name = MPI.Get_processor_name()
 
-########################################
-### Parse the command line arguments ###
-########################################
-args = parse_args()
+    ########################################
+    ### Parse the command line arguments ###
+    ########################################
+    args = parse_args()
 
-#########################################################
-### Load field attributes from JSON file ###
-#########################################################
-base_attrs, jacobian_attrs, coordinate_attrs, directions, base_state_indices = load_field_attributes(args.attrs)
+    #########################################################
+    ### Load field attributes from JSON file ###
+    #########################################################
+    attr_tables = load_field_attributes(args.attrs)
 
-#########################################################
-### Read the json file of converter script parameters ###
-#########################################################
-with open(args.file) as file:
-  params = json.loads(file.read())
+    #########################################################
+    ### Read the json file of converter script parameters ###
+    #########################################################
+    with open(args.file) as file:
+      params = json.loads(file.read())
 
-outpath = params["outpath"]
-FEoutBase = params["FEoutBase"]
-numOutRanks = params["numOutRanks"] 
-fileSetSize = params["fileSetSize"]
-tstart = params["tstart"]
-tstep = params["tstep"]
-netCDFpath = params["netCDFpath"]
-removeBinaries = params["removeBinaries"]
+    outpath = params["outpath"]
+    FEoutBase = params["FEoutBase"]
+    numOutRanks = params["numOutRanks"]
+    fileSetSize = params["fileSetSize"]
+    tstart = params["tstart"]
+    tstep = params["tstep"]
+    netCDFpath = params["netCDFpath"]
+    removeBinaries = params["removeBinaries"]
 
-if mpi_size <= fileSetSize+1:
-  fileBatchsize = np.int32(fileSetSize/mpi_size)
-else:
-  print('mpi_size of {:d} is > fileSetSize = {:d}. Please ensure mpi_size <= fileSetSize.*'.format(mpi_size,fileSetSize))
-  exit()
-tstop=tstart+tstep*fileSetSize   
-print("{:d}/{:d}: Hello World! on {:s}.".format(mpi_rank, mpi_size, mpi_name))
-print('Converting binary FE outputs {:s}{:s}_rank_{:d}-{:d}.*'.format(outpath,FEoutBase,0,numOutRanks))
-print('In batches of {:d} files per rank beginning from timestep {:d} to timestep {:d} every {:d} timesteps.'.format(fileBatchsize,tstart,tstop,tstep))
-print('Writing full netCDF files to {:s}/{:s}.*'.format(netCDFpath,FEoutBase))
+    if mpi_size <= fileSetSize+1:
+      fileBatchsize = np.int32(fileSetSize/mpi_size)
+    else:
+      print('mpi_size of {:d} is > fileSetSize = {:d}. Please ensure mpi_size <= fileSetSize.*'.format(mpi_size,fileSetSize))
+      exit()
+    tstop=tstart+tstep*fileSetSize
+    print("{:d}/{:d}: Hello World! on {:s}.".format(mpi_rank, mpi_size, mpi_name))
+    print('Converting binary FE outputs {:s}{:s}_rank_{:d}-{:d}.*'.format(outpath,FEoutBase,0,numOutRanks))
+    print('In batches of {:d} files per rank beginning from timestep {:d} to timestep {:d} every {:d} timesteps.'.format(fileBatchsize,tstart,tstop,tstep))
+    print('Writing full netCDF files to {:s}/{:s}.*'.format(netCDFpath,FEoutBase))
 
-Nh=3
+    if(mpi_rank == 0):
+      if not os.path.exists(netCDFpath):
+        os.makedirs(netCDFpath)
 
-if(mpi_rank == 0):
-  if not os.path.exists(netCDFpath):
-    os.makedirs(netCDFpath)
+    ts_list=np.arange(tstart,tstop+1,tstep,dtype=np.int32)
 
-ts_list=np.arange(tstart,tstop+1,tstep,dtype=np.int32)
+    #setup mpi task decomposition over the set of output file timesteps
+    list_len = len(ts_list)
+    elems_perRank = np.int64(np.floor(list_len/mpi_size))
+    extra_elems = np.int64(list_len % elems_perRank)
+    if mpi_rank == 0:
+           print("{:d}/{:d}: len(ts_list) = {:d}".format(mpi_rank, mpi_size,list_len))
+           print("{:d}/{:d}: elems_perRank = {:d}".format(mpi_rank, mpi_size,elems_perRank))
+           print("{:d}/{:d}: extra_elems = {:d}".format(mpi_rank, mpi_size,extra_elems))
+    for iRank in range(mpi_size):
+        if mpi_rank == iRank:
+           mystart = (iRank)*elems_perRank
+           myend = (iRank+1)*elems_perRank
+           if iRank is (mpi_size-1):
+              myend = myend+(list_len-mpi_size*elems_perRank) ###Catch straggler files with the last rank
+           mytslist = ts_list[mystart:myend]
+           print("{:d}/{:d}: mytslist = ts_list({:d}:{:d})".format(mpi_rank, mpi_size, mystart, myend))
+           print("{:d}/{:d}: Converting from {:s}.{:d} to {:s}.{:d}".format(mpi_rank, mpi_size, FEoutBase, mytslist[0], FEoutBase, mytslist[-1]))
+           print("{:d}/{:d}: len(myfileslist) = {:d}".format(mpi_rank, mpi_size,len(mytslist)))
+        MPI.COMM_WORLD.Barrier()
 
-#setup mpi task decomposition over the set of output file timesteps
-list_len = len(ts_list)
-elems_perRank = np.int64(np.floor(list_len/mpi_size))
-extra_elems = np.int64(list_len % elems_perRank)
-if mpi_rank == 0:
-       print("{:d}/{:d}: len(ts_list) = {:d}".format(mpi_rank, mpi_size,list_len))
-       print("{:d}/{:d}: elems_perRank = {:d}".format(mpi_rank, mpi_size,elems_perRank))
-       print("{:d}/{:d}: extra_elems = {:d}".format(mpi_rank, mpi_size,extra_elems))
-for iRank in range(mpi_size):
-    if mpi_rank == iRank:
-       mystart = (iRank)*elems_perRank
-       myend = (iRank+1)*elems_perRank
-       if iRank is (mpi_size-1):
-          myend = myend+(list_len-mpi_size*elems_perRank) ###Catch straggler files with the last rank
-       mytslist = ts_list[mystart:myend]
-       print("{:d}/{:d}: mytslist = ts_list({:d}:{:d})".format(mpi_rank, mpi_size, mystart, myend))
-       print("{:d}/{:d}: Converting from {:s}.{:d} to {:s}.{:d}".format(mpi_rank, mpi_size, FEoutBase, mytslist[0], FEoutBase, mytslist[-1]))
-       print("{:d}/{:d}: len(myfileslist) = {:d}".format(mpi_rank, mpi_size,len(mytslist)))
+    #Each rank can now loop over a subset of the timesteps to concatenate and create a single netCDF file per timestep
+    for timeStep in mytslist:
+       convert_timestep(int(timeStep), outpath, FEoutBase, numOutRanks, netCDFpath, removeBinaries, attr_tables)
+
     MPI.COMM_WORLD.Barrier()
+    print("{:d}/{:d}: Conversions complete on {:s}.".format(mpi_rank, mpi_size, mpi_name))
+    print("{:d}/{:d}: Goodbye World! on {:s}.".format(mpi_rank, mpi_size, mpi_name))
+    MPI.Finalize()
 
-#Each rank can now loop over a subset of the timesteps to concatenate and create a single netCDF file per timestep
-for timeStep in mytslist:
-   theseFiles=[]
-   for outRank in range(numOutRanks):
-       theseFiles.append('{:s}_rank_{:d}.{:d}'.format(FEoutBase,outRank,timeStep))
-   parseProceed=False
-   goodCnt=0
-   for thatFile in theseFiles:
-       #print('Checking {:s} '.format(thatFile))
-       thisFile='{:s}{:s}'.format(outpath,thatFile)
-       if os.path.exists(thisFile):
-           goodCnt+=1
-   #print(goodCnt)
-   if(goodCnt==numOutRanks):
-       parseProceed=True
-   else:
-       print('{:d} specified binary files are missing. Skipping timestep: {:d}...'.format(numOutRanks-goodCnt,timeStep))
-   if parseProceed:
-     dsFull=readBinary(numOutRanks,outpath,theseFiles)
-
-     # Add variable and coordinate attributes
-     dsFull = add_coordinate_attributes(dsFull)
-     dsFull = add_variable_attributes(dsFull, base_attrs, jacobian_attrs, coordinate_attrs, directions, base_state_indices)
-
-     # Reorder variables to desired order
-     dsFull = reorder_dataset_variables(dsFull)
-
-     # Create encoding to prevent _FillValue for all variables AND coordinates
-     encoding = {var: {'_FillValue': None} for var in list(dsFull.data_vars) + list(dsFull.coords)}
-
-     #write the full domain datatset to netcdf file
-     dsFull.to_netcdf('{:s}/{:s}.{:d}'.format(netCDFpath,FEoutBase,timeStep),format='NETCDF4',encoding=encoding)
-     
-     del dsFull
-     gc.collect()
-     if os.path.exists('{:s}/{:s}.{:d}'.format(netCDFpath,FEoutBase,timeStep)):
-       if removeBinaries:
-         for thatFile in theseFiles:
-           thisFile='{:s}{:s}'.format(outpath,thatFile)
-           os.remove(thisFile)
-
-MPI.COMM_WORLD.Barrier()
-print("{:d}/{:d}: Conversions complete on {:s}.".format(mpi_rank, mpi_size, mpi_name))
-print("{:d}/{:d}: Goodbye World! on {:s}.".format(mpi_rank, mpi_size, mpi_name))
-MPI.Finalize()
+if __name__ == "__main__":
+    main()
