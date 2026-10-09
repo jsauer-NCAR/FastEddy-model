@@ -826,6 +826,54 @@ int calculateJacobians(){
        } // end for(j...
      } // end for(i...
    } // end for(iBnd...
+   // exchange the metric halos with the neighbor ranks, then restore the zero-gradient copies at the global boundaries only
+   if(mpi_size_world > 1){
+     float *metricFlds[7] = {D_Jac, invD_Jac, J13, J23, J31, J32, J33};
+     int iFld;
+     for(iFld=0; iFld < 7; iFld++){
+       errorCode = fempi_XdirHaloExchange(Nxp, Nyp, Nzp, Nh, metricFlds[iFld]);
+       errorCode = fempi_YdirHaloExchange(Nxp, Nyp, Nzp, Nh, metricFlds[iFld]);
+     }
+     for(iBnd=0; iBnd < 6; iBnd++){
+       if(((iBnd == 0) && (mpi_XloBndyRank != 1)) || ((iBnd == 1) && (mpi_XhiBndyRank != 1)) ||
+          ((iBnd == 2) && (mpi_YloBndyRank != 1)) || ((iBnd == 3) && (mpi_YhiBndyRank != 1))){
+         continue;   // internal rank boundary: keep the exchanged values
+       }
+       ilo = iMin-Nh; ihi = iMax+Nh; jlo = jMin-Nh; jhi = jMax+Nh; klo = kMin-Nh; khi = kMax+Nh;
+       switch(iBnd){
+         case 0: ihi = iMin; break;
+         case 1: ilo = iMax; break;
+         case 2: jhi = jMin; break;
+         case 3: jlo = jMax; break;
+         case 4: khi = kMin; break;
+         case 5: klo = kMax; break;
+       }
+       for(i=ilo; i < ihi; i++){
+         for(j=jlo; j < jhi; j++){
+           for(k=klo; k < khi; k++){
+             iT = i; jT = j; kT = k;
+             switch(iBnd){
+               case 0: iT = iMin; break;
+               case 1: iT = iMax-1; break;
+               case 2: jT = jMin; break;
+               case 3: jT = jMax-1; break;
+               case 4: kT = kMin; break;
+               case 5: kT = kMax-1; break;
+             }
+             ijkDest   = i*(Nyp+2*Nh)*(Nzp+2*Nh)+j*(Nzp+2*Nh)+k;
+             ijkTarget = iT*(Nyp+2*Nh)*(Nzp+2*Nh)+jT*(Nzp+2*Nh)+kT;
+             D_Jac[ijkDest] = D_Jac[ijkTarget];
+             invD_Jac[ijkDest] = invD_Jac[ijkTarget];
+             J13[ijkDest] = J13[ijkTarget];
+             J23[ijkDest] = J23[ijkTarget];
+             J31[ijkDest] = J31[ijkTarget];
+             J32[ijkDest] = J32[ijkTarget];
+             J33[ijkDest] = J33[ijkTarget];
+           } //end for(k...
+         } // end for(j...
+       } // end for(i...
+     } // end for(iBnd...
+   } // end if(mpi_size_world > 1)
 #ifdef DEBUG
    printf("mpi_rank_world--%d/%d calculateJacaobians()-Boundaries, complete!\n",mpi_rank_world, mpi_size_world);
    fflush(stdout);
